@@ -7,11 +7,12 @@
 #include <queue>
 #include <string>
 /**
- * symcoro is the main namespace where everything is in
+ * @namespace symcoro is the main namespace where everything is in.
  */
 namespace symcoro
 {
-using cc_t = boost::context::continuation;  //< continuation
+using cc_t =
+    boost::context::continuation;  ///< @typedef cc_t is the continuation
 
 /**
  * @brief CoroWorker is the worker based on coroutine to schedule @see Job.
