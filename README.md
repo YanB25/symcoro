@@ -62,7 +62,7 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 make -j8
 ```
 
-## Run
+## Run the example
 
 ``` bash
 $ ./bin/main
@@ -71,6 +71,12 @@ from job 2
 from job 3
 from job 2 again
 ```
+
+## Benchmarking
+
+It takes *two* context switch to schedule the next working coroutine (one switch from the working coroutine to the coordinating coroutine, and another to switch to the next working coroutine).
+
+It takes ~40 ns in total to schedule to the next working coroutine.
 
 ## Install & Uninstall
 
