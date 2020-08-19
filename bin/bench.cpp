@@ -1,3 +1,6 @@
+/**
+ * @file benchmark of symcoro::CoroWorker
+ */
 #include <boost/context/continuation.hpp>
 #include <boost/coroutine2/all.hpp>
 #include <cstddef>
@@ -7,11 +10,14 @@
 #include <thread>
 
 #include "symcoro/symcoro.hpp"
+
+constexpr static int kBenchmarkMills = 5000;  //< benchmark for 5 ms
 int main()
 {
     symcoro::CoroWorker worker;
     std::atomic<bool> stop{false};
     std::atomic<int> cnt{0};
+    // timer to wait until kBenchmarkMills elaps
     std::thread timer([&]() {
         auto start = std::chrono::steady_clock::now();
         while (true)
@@ -20,7 +26,7 @@ int main()
             auto cnt = std::chrono::duration_cast<std::chrono::milliseconds>(
                            now - start)
                            .count();
-            if (cnt >= 1000)
+            if (cnt >= kBenchmarkMills)
             {
                 stop = true;
                 break;
@@ -28,7 +34,7 @@ int main()
             usleep(500);
         }
     });
-    for (int i = 0; i < 100; ++i)
+    for (int i = 0; i < 20; ++i)
     {
         worker.Register([&](symcoro::cc_t &&sink) {
             // std::cout << "from job i" << std::endl;
@@ -43,7 +49,10 @@ int main()
 
     // block until all the jobs are finished.
     worker.Serve();
-    std::cout << "count is " << cnt << std::endl;
+    std::cout << "count is " << cnt << " for " << kBenchmarkMills << " ms"
+              << std::endl;
+    std::cout << "Latency is " << 1.0 * kBenchmarkMills * 1000 * 1000 / cnt
+              << " ns" << std::endl;
 
     timer.join();
     return 0;

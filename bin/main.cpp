@@ -7,31 +7,82 @@
 #include <thread>
 
 #include "symcoro/symcoro.hpp"
+using cc_t = boost::context::continuation;
 int main()
 {
-    symcoro::CoroWorker worker;
-
-    // register a job
-    worker.Register([&](symcoro::cc_t &&sink) {
-        std::cout << "from job 1" << std::endl;
-        return std::move(sink);
-    });
-
-    // register yet another job
-    worker.Register([&](symcoro::cc_t &&sink) {
-        std::cout << "from job 2" << std::endl;
-        // Switch away and go back here later
-        sink = sink.resume();
-        std::cout << "from job 2 again" << std::endl;
-        return std::move(sink);
-    });
-
-    // register yet another job.
-    worker.Register([&](symcoro::cc_t &&sink) {
-        std::cout << "from job 3" << std::endl;
-        return std::move(sink);
-    });
-
-    // block until all the jobs are finished.
-    worker.Serve();
+    std::queue<cc_t> continuations;
+    for (int i = 0; i < 3; ++i)
+    {
+        continuations.emplace(boost::context::callcc([&, i](cc_t &&sink) {
+            sink = sink.resume();
+            std::cout << "hei " << i << std::endl;
+            if (!continuations.empty())
+            {
+                if (continuations.front())
+                {
+                    auto new_ctx =
+                        continuations.front().resume_with([&](cc_t &&sink) {
+                            continuations.pop();
+                            return std::move(sink);
+                        });
+                    continuations.emplace(std::move(new_ctx));
+                }
+                else
+                {
+                    continuations.pop();
+                }
+            }
+            std::cout << "hei " << i << std::endl;
+            if (!continuations.empty())
+            {
+                if (continuations.front())
+                {
+                    auto new_ctx =
+                        continuations.front().resume_with([&](cc_t &&sink) {
+                            continuations.pop();
+                            return std::move(sink);
+                        });
+                    continuations.emplace(std::move(new_ctx));
+                }
+                else
+                {
+                    continuations.pop();
+                }
+            }
+            std::cout << "hei " << i << std::endl;
+            if (!continuations.empty())
+            {
+                if (continuations.front())
+                {
+                    auto new_ctx =
+                        continuations.front().resume_with([&](cc_t &&sink) {
+                            continuations.pop();
+                            return std::move(sink);
+                        });
+                    continuations.emplace(std::move(new_ctx));
+                }
+                else
+                {
+                    continuations.pop();
+                }
+            }
+            return std::move(sink);
+        }));
+    }
+    while (!continuations.empty())
+    {
+        if (continuations.front())
+        {
+            std::cout << "Iuuse round" << std::endl;
+            continuations.front().resume_with([&](cc_t &&sink) {
+                continuations.pop();
+                return std::move(sink);
+            });
+        }
+        else
+        {
+            continuations.pop();
+        }
+    }
+    std::cout << continuations.size() << std::endl;
 }
