@@ -46,6 +46,12 @@ from job 3
 from job 2 again
 ```
 
+## Prerequisite
+
+- C++ compiler supports at least c++11
+- Boost >= 1.4
+  - An earlier version of Boost may work, as long as it supports callcc/continuation. But it's not tested.
+
 ## Compile
 
 ``` bash
