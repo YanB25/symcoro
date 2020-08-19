@@ -1,15 +1,57 @@
-# C++ Project Template
+# Symmetric Coroutine Worker
 
-A C++ template to quickly start your own project.
+A C++ worker implementation based on symmetric coroutine provided by `boost::context`.
 
-This template includes a simplest runnable symcoro program, which breaks down into a `symcoro` lib (see src/ and include/symcoro/) and an executable (see bin/main.cpp).
+It's a very thin wrapper around `boost::context`, relying on the callcc/continuation module.
+
+It's just a couple of lines, so why not read the source code?
+
+## How to Use
+
+``` c++
+int main()
+{
+    symcoro::CoroWorker worker;
+
+    // register a job
+    worker.Register([&](symcoro::cc_t &&sink) {
+        std::cout << "from job 1" << std::endl;
+        return std::move(sink);
+    });
+    // register yet another job
+    worker.Register([&](symcoro::cc_t &&sink) {
+        std::cout << "from job 2" << std::endl;
+        // Switch away and go back here later
+        sink = sink.resume();
+        std::cout << "from job 2 again" << std::endl;
+        return std::move(sink);
+    });
+    // register yet another job.
+    worker.Register([&](symcoro::cc_t &&sink) {
+        std::cout << "from job 3" << std::endl;
+        return std::move(sink);
+    });
+
+    // block until all the jobs are finished.
+    worker.Serve();
+}
+```
+
+... and the output is 
+
+``` bash
+from job 1
+from job 2
+from job 3
+from job 2 again
+```
 
 ## Compile
 
 ``` bash
 mkdir build; cd build
-cmake -DCMAKE_BUILD_TYPE=Debug ..
-# or cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake -DCMAKE_BUILD_TYPE=Release ..
+# or cmake -DCMAKE_BUILD_TYPE=Debug ..
 # for more options, see CMakeLists.txt
 make -j8
 ```
@@ -18,7 +60,10 @@ make -j8
 
 ``` bash
 $ ./bin/main
-hello world!
+from job 1
+from job 2
+from job 3
+from job 2 again
 ```
 
 ## Install & Uninstall
